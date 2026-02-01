@@ -8,7 +8,7 @@ THINKING-MODE: $ARGUMENT1 or "think hard" if not specified
 
 ## Instructions
 
-Follow the spec methodology in `.claude/rules/how-to-write-specs.md`.
+Follow the spec methodology in `docs/how-to-write-specs.md`.
 
 ## Workflow
 

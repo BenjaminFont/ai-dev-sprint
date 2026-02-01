@@ -8,7 +8,7 @@ THINKING-MODE: $ARGUMENT1 or "think hard" if not specified
 
 ## Instructions
 
-Follow the planning methodology in `.claude/rules/how-to-write-plans.md`.
+Follow the planning methodology in `docs/how-to-write-plans.md`.
 
 ## Workflow
 

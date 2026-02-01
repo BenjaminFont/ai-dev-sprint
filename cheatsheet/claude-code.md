@@ -56,7 +56,7 @@ claude --model opus         # Model wählen (opus, sonnet, haiku)
 --json-schema '{"type":"object"}'   # Validiertes JSON Output
 
 # Tools einschränken
---tools "Bash,Edit,Read"            # Nur diese Tools
+--tools "Edit,Read"            # Nur diese Tools
 --allowedTools "Bash(git:*)"        # Auto-approve Pattern
 --disallowedTools "Edit"            # Tools blockieren
 
