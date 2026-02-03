@@ -8,9 +8,10 @@
    migrieren. Insbesondere sollen Breaking Changes beachtet werden.
 
 3. b. Nutze Context7, um die aktuellste Dokumentation zu Spring Boot 4.0 und JDK 24 abzurufen, und erstelle eine Bewertung, was nötig wäre, um zu migrieren.
-   Insbesondere sollen Breaking Changes beachtet werden.                
+   Insbesondere sollen Breaking Changes beachtet werden.
 
 # MCP Aufgabe B
 
 1. Überlege dir einen Use Case der dein Development Workflow besser machen würde. (Figma[https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server], Jira[https://medium.com/@milad.jafary/how-to-connect-atlassian-mcp-server-to-claude-code-5c22d47d5cd5], aws[https://awslabs.github.io/mcp/#available-aws-mcp-servers])
-2. Binde den MCP Server and und experimentiere damit. 
+2. Binde den MCP Server and und experimentiere damit.
+
