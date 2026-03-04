@@ -12,6 +12,8 @@ Isolierte KI-Assistenten mit eigenem Kontextfenster, eigenen Tools und eigenem S
 | **Plan** | Inherited | Read-only | Kontext sammeln fuer Planungsmodus |
 | **general-purpose** | Inherited | Alle | Komplexe mehrstufige Aufgaben |
 | **Bash** | Inherited | Bash | Terminal-Commands in separatem Kontext |
+| **statusline-setup** | Sonnet | Read, Edit | Statusline Konfiguration |
+| **claude-code-guide** | Haiku | Read, WebFetch | Claude Code Dokumentation |
 
 ## Custom Subagents erstellen
 
@@ -51,8 +53,13 @@ Bei Aufruf:
 | `disallowedTools` | Nein | Explizit verbotene Tools |
 | `model` | Nein | `sonnet`, `opus`, `haiku`, `inherit` (Standard) |
 | `permissionMode` | Nein | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, `plan` |
+| `maxTurns` | Nein | Maximum Agentic Turns |
+| `memory` | Nein | Persistent Memory Scope: `user`, `project`, `local` |
+| `background` | Nein | Als Background Task laufen: `true`/`false` |
+| `isolation` | Nein | Worktree Isolation: `worktree` |
+| `mcpServers` | Nein | MCP Server Namen (Array) |
 | `skills` | Nein | Skills die in den Subagent-Kontext geladen werden |
-| `hooks` | Nein | Lifecycle-Hooks (PreToolUse, PostToolUse, Stop) |
+| `hooks` | Nein | Lifecycle-Hooks (PreToolUse, PostToolUse, Stop, etc.) |
 
 ## Subagents in Skills
 
@@ -100,17 +107,50 @@ Bis zu 7 Subagents koennen parallel laufen.
 # Ad-hoc Subagents per CLI Flag
 claude --agents '{"reviewer": {"description": "...", "tools": ["Read"]}}'
 
-# Subagents deaktivieren
-claude --disallowedTools "Task(Explore)" "Task(my-agent)"
+# Subagents deaktivieren (WICHTIG: Agent() nicht Task()!)
+claude --disallowedTools "Agent(Explore)" "Agent(my-agent)"
+
+# Spezifischen Agent nutzen
+claude --agent "my-custom-agent"
+
+# Agent Management
+/agents                              # Interactive Agent Config
 ```
 
 ```json
 // settings.json -- Subagents blockieren
 {
   "permissions": {
-    "deny": ["Task(Explore)", "Task(my-custom-agent)"]
+    "deny": ["Agent(Explore)", "Agent(my-custom-agent)"]
   }
 }
+```
+
+**WICHTIG**: Ab v2.1.63+ heißt das Tool `Agent()`, nicht mehr `Task()`!
+
+## Features
+
+### Persistent Memory
+Subagents können eigenes Memory haben:
+```yaml
+---
+memory: user   # user, project, oder local
+---
+```
+
+### Worktree Isolation
+Für Git-isolierte Umgebungen:
+```yaml
+---
+isolation: worktree
+---
+```
+
+### MCP Server Access
+```yaml
+---
+mcpServers: ["github", "postgres"]
+---
 ```
 
 ## Kontext-Isolation
@@ -119,6 +159,13 @@ claude --disallowedTools "Task(Explore)" "Task(my-agent)"
 - Nur das Ergebnis fliesst in die Hauptkonversation zurueck
 - Subagents koennen keine weiteren Subagents spawnen (kein Nesting)
 - Transcripts: `~/.claude/projects/{project}/{session}/subagents/agent-{id}.jsonl`
+
+## Agent Teams vs Subagents
+
+**Agent Teams** sind ein SEPARATES Feature (nicht zu verwechseln):
+- Mehrere Agents mit Peer-to-Peer Kommunikation
+- Eigene Konfiguration in `.claude/agent-teams/`
+- Siehe separate Dokumentation
 
 ## Scope-Prioritaet
 

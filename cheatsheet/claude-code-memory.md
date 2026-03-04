@@ -10,13 +10,17 @@ Prioritaet von hoch nach niedrig. Hoehere ueberschreiben niedrigere.
 
 | Typ | Speicherort | Geteilt mit |
 |-----|-------------|-------------|
-| **Managed Policy** | `/Library/Application Support/ClaudeCode/CLAUDE.md` (macOS) | Alle User (Organisation) |
-| **Project Memory** | `./CLAUDE.md` oder `./.claude/CLAUDE.md` | Team (via Git) |
-| **Project Rules** | `./.claude/rules/*.md` | Team (via Git) |
+| **Managed Policy** | macOS: `/Library/Application Support/ClaudeCode/CLAUDE.md`<br>Windows: `%ProgramData%\ClaudeCode\CLAUDE.md`<br>Linux: `/etc/claude/CLAUDE.md` | Alle User (Organisation) |
+| **Project Memory** | `./CLAUDE.md` oder `./.claude/CLAUDE.md` (beide gleichwertig) | Team (via Git) |
+| **Project Rules** | `./.claude/rules/*.md` (OHNE `paths:` gelten immer) | Team (via Git) |
 | **User Memory** | `~/.claude/CLAUDE.md` | Nur du (alle Projekte) |
+| **User Rules** | `~/.claude/rules/*.md` | Nur du (alle Projekte) |
 | **Local Memory** | `./CLAUDE.local.md` | Nur du (dieses Projekt) |
+| **Auto Memory** | `~/.claude/projects/<project>/memory/` | Automatische Notizen |
 
 `CLAUDE.local.md` wird automatisch in `.gitignore` aufgenommen.
+
+**WICHTIG**: User-Level Memory/Rules haben NIEDRIGERE Priorität als Project Memory/Rules!
 
 ## Wann was verwenden
 
@@ -28,13 +32,33 @@ Prioritaet von hoch nach niedrig. Hoehere ueberschreiben niedrigere.
 | Meine lokalen Sandbox-URLs / Testdaten | `./CLAUDE.local.md` |
 | Firmenweite Policies ausrollen | Managed Policy |
 
+## Auto Memory (NEU)
+
+Claude lernt automatisch aus Fehlern und speichert Erkenntnisse:
+
+```
+~/.claude/projects/<project>/memory/
+├── MEMORY.md          # Hauptnotizen (max 200 Zeilen, wird immer geladen)
+└── debugging.md       # Topic Files (nach Bedarf referenziert)
+```
+
+```bash
+# Auto Memory browsen/bearbeiten
+/memory
+
+# Deaktivieren
+CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 claude
+```
+
+**Best Practice**: MEMORY.md unter 200 Zeilen halten, Details in Topic Files auslagern.
+
 ## Quick Start
 
 ```bash
 # Projekt-Memory bootstrappen
 /init
 
-# Memory-Dateien bearbeiten
+# Memory browsen/bearbeiten (inkl. Auto Memory)
 /memory
 
 # Geladene Memory-Dateien anzeigen
@@ -42,6 +66,8 @@ Prioritaet von hoch nach niedrig. Hoehere ueberschreiben niedrigere.
 ```
 
 ## CLAUDE.md schreiben
+
+**Ziel**: Unter 200 Zeilen bleiben (Context-Kosten!)
 
 ```markdown
 # Projekt-Kontext
@@ -55,9 +81,15 @@ Prioritaet von hoch nach niedrig. Hoehere ueberschreiben niedrigere.
 - Conventional Commits: feat:, fix:, refactor:, docs:
 - Max 400 Zeilen pro Datei
 - Immutability bevorzugen
+
+## Architektur
+Details: @docs/architecture.md
 ```
 
-Spezifisch sein. "2-Space Indentation" statt "Code sauber formatieren".
+**Best Practices**:
+- Spezifisch sein: "2-Space Indentation" statt "Code sauber formatieren"
+- Lange Details in separate Dateien mit `@path` importieren
+- Regelmaessig pruefen und veraltete Infos entfernen
 
 ## Project Rules
 
@@ -78,12 +110,14 @@ Alle `.md`-Dateien werden rekursiv entdeckt. Subdirectories und Symlinks funktio
 
 ### Path-spezifische Rules
 
-Rules koennen per Frontmatter auf bestimmte Dateien eingeschraenkt werden. Diese werden erst geladen wenn Claude an matchenden Dateien arbeitet.
+Rules **OHNE** `paths:` werden IMMER geladen.
+Rules **MIT** `paths:` werden nur on-demand geladen, wenn Claude an matchenden Dateien arbeitet.
 
 ```markdown
 ---
 paths:
   - "src/api/**/*.ts"
+  - "lib/api/**/*.{ts,tsx}"
 ---
 # API Rules
 - Input Validation an allen Endpoints
@@ -94,10 +128,10 @@ paths:
 |---------|--------|
 | `**/*.ts` | Alle .ts Dateien in allen Verzeichnissen |
 | `src/**/*` | Alles unter src/ |
-| `src/**/*.{ts,tsx}` | .ts und .tsx unter src/ |
+| `src/**/*.{ts,tsx}` | .ts und .tsx unter src/ (Brace Expansion) |
 | `{src,lib}/**/*.ts` | .ts unter src/ oder lib/ |
 
-Rules ohne `paths` gelten immer. Mit `paths` nur on-demand.
+**Symlinks** in `.claude/rules/` werden supported (circular detection).
 
 ### User-Level Rules
 
@@ -109,7 +143,7 @@ Persoenliche Rules die fuer alle Projekte gelten:
 └── workflows.md
 ```
 
-Werden vor Project Rules geladen (niedrigere Prioritaet).
+**Haben NIEDRIGERE Priorität als Project Rules** (werden vor Project Rules geladen, aber Project Rules überschreiben sie).
 
 ## Imports
 
@@ -123,8 +157,11 @@ Siehe @README fuer Projekt-Uebersicht und @package.json fuer npm Commands.
 - Persoenliche Prefs: @~/.claude/my-project-instructions.md
 ```
 
-- Relative und absolute Pfade
+**Verhalten**:
+- Relative und absolute Pfade (relative resolven zum Source-File)
+- Imports werden EXPANDED (Inhalt eingebettet, nicht nur referenziert)
 - Rekursive Imports (max 5 Ebenen tief)
+- Approval-Dialog beim ersten Import (Security)
 - Werden NICHT in Code-Blocks oder Inline-Code ausgewertet
 
 ## Rekursive Suche
@@ -135,12 +172,25 @@ Claude sucht CLAUDE.md und CLAUDE.local.md rekursiv aufwaerts ab dem cwd bis zur
 
 CLAUDE.md in Unterverzeichnissen werden on-demand geladen wenn Claude dort Dateien liest.
 
-## Zusaetzliche Verzeichnisse
+## Zusaetzliche Verzeichnisse & Managed Policies
 
 ```bash
 # Memory aus zusaetzlichem Verzeichnis laden
 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 claude --add-dir ../shared-config
 ```
+
+### Managed Policies (Enterprise)
+
+Admins können bestimmte CLAUDE.md files excluden:
+
+```json
+// Managed Policy settings
+{
+  "claudeMdExcludes": ["**/CLAUDE.local.md", "team-a/**"]
+}
+```
+
+**WICHTIG**: Managed Policy CLAUDE.md selbst kann nicht excluded werden.
 
 ## Best Practices
 

@@ -8,9 +8,11 @@ Model Context Protocol -- ein offener Standard, der Claude mit externen Tools, D
 
 | Typ | Wann verwenden |
 |-----|---------------|
-| `http` | Remote-Server (empfohlen) |
+| `http` / `streamable-http` | Remote-Server (empfohlen) |
 | `sse` | Remote-Server (deprecated, http bevorzugen) |
 | `stdio` | Lokale Prozesse, CLI-Tools, Custom Scripts |
+
+**`streamable-http`** ist der neue Standard-Name, `http` bleibt als Synonym.
 
 ## Server hinzufuegen
 
@@ -87,6 +89,8 @@ Env-Vars in `.mcp.json`: `${VAR}` oder `${VAR:-default}`. Funktioniert in `comma
 
 ## OAuth / Authentifizierung
 
+### Standard OAuth Flow
+
 ```bash
 # 1. Server hinzufuegen
 claude mcp add --transport http sentry https://mcp.sentry.dev/mcp
@@ -94,6 +98,16 @@ claude mcp add --transport http sentry https://mcp.sentry.dev/mcp
 # 2. In Session authentifizieren
 /mcp
 # -> "Authenticate" waehlen, Browser oeffnet sich
+```
+
+### Pre-configured OAuth (Enterprise)
+
+```bash
+claude mcp add --transport http \
+  --client-id "your-client-id" \
+  --client-secret "your-secret" \
+  --callback-port 8080 \
+  myapi https://api.example.com/mcp
 ```
 
 Tokens werden sicher gespeichert und automatisch erneuert. "Clear authentication" in `/mcp` zum Widerrufen.
@@ -133,6 +147,7 @@ Andere Apps (z.B. Claude Desktop) koennen sich damit verbinden und Claude Code's
 | `MCP_TIMEOUT` | Startup-Timeout in ms (z.B. `MCP_TIMEOUT=10000 claude`) |
 | `MAX_MCP_OUTPUT_TOKENS` | Max Output-Groesse (Standard: 25000, Warnung ab 10000) |
 | `ENABLE_TOOL_SEARCH` | `auto` (Standard), `auto:N` (Custom-Threshold), `true`, `false` |
+| `ENABLE_CLAUDEAI_MCP_SERVERS` | `false` zum Deaktivieren von Claude.ai MCP Server Integration |
 
 ## Tool Search
 
@@ -143,7 +158,7 @@ ENABLE_TOOL_SEARCH=auto:5 claude   # Ab 5% aktivieren
 ENABLE_TOOL_SEARCH=false claude    # Deaktivieren
 ```
 
-Erfordert Sonnet 4+ oder Opus 4+. Haiku nicht unterstuetzt.
+**WICHTIG**: Erfordert Sonnet 4+ oder Opus 4+. **Haiku wird nicht unterstuetzt!**
 
 ## Permissions fuer MCP Tools
 
@@ -154,6 +169,58 @@ Erfordert Sonnet 4+ oder Opus 4+. Haiku nicht unterstuetzt.
     "deny": ["mcp__dangerous__delete_all"]
   }
 }
+```
+
+## Plugin-provided MCP Servers
+
+Plugins koennen MCP Server bündeln. Diese werden automatisch verwaltet:
+
+```json
+// plugin.json
+{
+  "mcpServers": {
+    "my-tool": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/server",
+      "args": ["--port", "8080"]
+    }
+  }
+}
+```
+
+Oder separate `.mcp.json` im Plugin-Root.
+
+## Managed MCP Configuration (Enterprise)
+
+### Exklusive Admin-Kontrolle
+
+Admins können alle User-MCP-Server deaktivieren:
+
+```json
+// managed-mcp.json
+{
+  "mcpServers": {
+    "approved-only": {...}
+  }
+}
+```
+
+### Allowlists/Denylists
+
+Policy-basierte Kontrolle:
+
+```json
+{
+  "allowedMcpServers": ["github", "jira"],
+  "deniedMcpServers": ["*-experimental"]
+}
+```
+
+## Claude.ai MCP Server Integration
+
+MCP Server aus claude.ai sind automatisch verfuegbar:
+
+```bash
+ENABLE_CLAUDEAI_MCP_SERVERS=false claude  # Zum Deaktivieren
 ```
 
 ## Troubleshooting

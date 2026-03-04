@@ -30,14 +30,14 @@ Alle Felder sind optional. Nur `description` wird empfohlen.
 |------|-------|
 | `name` | Anzeigename (Standard: Ordnername). Nur Kleinbuchstaben, Zahlen, Bindestriche. |
 | `description` | Sagt Claude UND dem User wann der Skill passt |
-| `allowed-tools` | Tools die der Skill OHNE Nachfrage nutzen darf |
+| `allowed-tools` | Tools die der Skill OHNE Nachfrage nutzen darf (z.B. `Read`, `Bash(git:*)`) |
 | `model` | Model Override (opus, sonnet, haiku) |
 | `context` | `fork` = Skill laeuft als isolierter Subagent |
 | `agent` | Subagent-Typ bei `context: fork` (Explore, Plan, general-purpose, oder Custom aus `.claude/agents/`) |
-| `user-invocable` | `false` = Nur per Auto-Invocation, nicht via `/name` |
-| `disable-model-invocation` | `true` = Nur manuell via `/name`, kein Auto-Trigger |
+| `user-invocable` | `false` = User kann NICHT via `/name` aufrufen, nur Auto-Trigger |
+| `disable-model-invocation` | `true` = Claude kann NICHT auto-triggern, nur via `/name` |
 | `argument-hint` | Autocomplete-Hinweis (z.B. `[issue-number]`) |
-| `hooks` | Lifecycle-Hooks (PreToolUse, PostToolUse, Stop) nur fuer diesen Skill |
+| `hooks` | Lifecycle-Hooks (alle 17 Events: SessionStart, PreToolUse, Stop, etc.) |
 
 ## Argumente
 
@@ -135,9 +135,14 @@ FEATURE: $0 - Nachfragen falls nicht angegeben.
 
 Claude ruft Skills automatisch auf wenn die `description` zur User-Anfrage passt.
 
-Steuerung:
-- `disable-model-invocation: true` -- Skill nur manuell via `/name`
-- `user-invocable: false` -- Skill nur automatisch, nicht via `/name`
+### Invocation Matrix
+
+| Setting | Du via `/name` | Claude Auto | Description im Context |
+|---------|----------------|-------------|------------------------|
+| **Default** | ✅ Ja | ✅ Ja | ✅ Ja |
+| `disable-model-invocation: true` | ✅ Ja | ❌ Nein | ❌ Nein |
+| `user-invocable: false` | ❌ Nein | ✅ Ja | ✅ Ja |
+| Beide `true`/`false` | ❌ Nein | ❌ Nein | - |
 
 ## Subagent-Modus
 
@@ -158,7 +163,20 @@ Recherchiere $ARGUMENTS:
 3. Ergebnisse mit Datei-Referenzen zusammenfassen
 ```
 
-`agent` Optionen: `Explore`, `Plan`, `general-purpose`, oder Custom-Subagent aus `.claude/agents/`. Standard: `general-purpose`.
+**Agent Optionen**: `Explore`, `Plan`, `general-purpose`, `Bash`, oder Custom aus `.claude/agents/`. Standard: `general-purpose`.
+
+## Extended Thinking (Ultrathink)
+
+Skill aktiviert automatisch Extended Thinking wenn das Wort **`ultrathink`** irgendwo im SKILL.md vorkommt.
+
+```yaml
+---
+name: complex-debug
+description: Komplexe Debugging-Probleme analysieren
+---
+
+Nutze ultrathink fuer tiefe Analyse.
+```
 
 ## Dynamischer Kontext
 
@@ -177,6 +195,38 @@ agent: Explore
 Fasse diesen Pull Request zusammen.
 ```
 
-## Zusatzdateien
+## Zusatzdateien & Nested Skills
 
-Ein Skill-Ordner kann neben `SKILL.md` weitere Dateien enthalten (Templates, Referenzdocs, Beispiele). Claude hat Zugriff darauf waehrend der Skill-Ausfuehrung.
+### Supporting Files
+
+Ein Skill-Ordner kann neben `SKILL.md` weitere Dateien enthalten:
+
+```
+.claude/skills/my-skill/
+├── SKILL.md          # Required
+├── reference.md      # Claude hat Zugriff
+├── template.txt      # Claude kann lesen
+└── examples/         # Subdirectories OK
+    └── sample.md
+```
+
+Claude hat Zugriff auf alle Dateien waehrend Skill-Ausfuehrung.
+
+### Nested Skill Discovery
+
+Skills werden rekursiv entdeckt:
+
+```
+.claude/skills/
+├── review/SKILL.md
+└── team-a/
+    └── custom/SKILL.md   # Wird automatisch gefunden
+```
+
+### Skills aus zusaetzlichen Directories
+
+```bash
+claude --add-dir ../shared-skills
+```
+
+Mit `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` werden auch Skills aus `--add-dir` geladen.
