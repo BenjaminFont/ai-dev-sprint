@@ -4,8 +4,8 @@
 
 Bei nicht-trivialen Aenderungen gilt IMMER diese Reihenfolge:
 
-1. **Spec schreiben** (`docs/how-to-write-specs.md`) -- WAS und WARUM. Speichern unter `specs/<feature>.md`
-2. **Plan schreiben** (`docs/how-to-write-plans.md`) -- WIE und WANN. Speichern unter `specs/<feature>-implementation-plan.md`
+1. **Spec schreiben** (`/spec`) -- WAS und WARUM. Speichern unter `specs/<feature>.md`
+2. **Plan schreiben** (`/plan`) -- WIE und WANN. Speichern unter `specs/<feature>-implementation-plan.md`
 3. **Implementieren** -- auf Basis des Plans, schrittweise
 
 Siehe `docs/how-to-write-specs.md` und `docs/how-to-write-plans.md` fuer Details.
